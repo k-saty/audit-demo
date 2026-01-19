@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  api:
+    container_name: audit-api
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/audit_demo
+    depends_on:
+      - db
+
+  db:
+    container_name: audit-db
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: audit_demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - audit_pg_data:/var/lib/postgresql/data
+
+volumes:
+  audit_pg_data:
