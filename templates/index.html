@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Audit Demo Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Conversation Audit Logs — Demo</h1>
+
+      <section id="create">
+        <h2>Create log</h2>
+        <form id="logForm">
+          <label>Tenant ID: <input name="tenant_id" required /></label>
+          <label>Agent ID: <input name="agent_id" required /></label>
+          <label>Session ID: <input name="session_id" required /></label>
+          <label>Channel: <input name="channel" required /></label>
+          <label>Prompt: <textarea name="prompt" required></textarea></label>
+          <label>Response: <textarea name="response" required></textarea></label>
+          <button type="submit">Send log</button>
+        </form>
+        <div id="createResult"></div>
+      </section>
+
+      <section id="list">
+        <h2>View logs</h2>
+        <label>Tenant ID: <input id="queryTenant" /></label>
+        <button id="fetchLogs">Fetch logs</button>
+        <div id="logsCount"></div>
+        <table id="logsTable">
+          <thead><tr><th>ID</th><th>Timestamp</th><th>Agent</th><th>Session</th><th>Channel</th><th>Prompt</th><th>Response</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="admin">
+        <h2>Admin — Retention & Deletion Audits (Demo)</h2>
+
+        <div class="card">
+          <h3>Set per-tenant retention</h3>
+          <form id="retentionForm">
+            <label>Tenant ID: <input name="tenant_id" required /></label>
+            <label>Retention days:
+              <select name="retention_days">
+                <option value="30">30</option>
+                <option value="90" selected>90</option>
+                <option value="180">180</option>
+              </select>
+            </label>
+            <button type="submit">Set retention</button>
+          </form>
+          <div id="retentionResult"></div>
+        </div>
+
+        <div class="card">
+          <h3>View deletion audits</h3>
+          <label>Tenant ID (optional): <input id="auditTenant" /></label>
+          <button id="fetchAudits">Fetch deletion audits</button>
+          <button id="runCleanup">Run cleanup (demo only)</button>
+          <div id="auditsCount"></div>
+          <table id="auditsTable">
+            <thead><tr><th>ID</th><th>Tenant</th><th>Retention</th><th>Deleted Before</th><th>Deleted Count</th><th>Run Timestamp</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/main.js"></script>
+  </body>
+</html>

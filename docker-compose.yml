@@ -1,9 +1,13 @@
-version: "3.9"
 
 services:
   api:
     container_name: audit-api
     build: .
+    working_dir: /app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./:/app:delegated
+      - /app/.venv
     ports:
       - "8000:8000"
     environment:

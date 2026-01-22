@@ -15,3 +15,20 @@ class AuditLogCreate(BaseModel):
 class AuditLogResponse(BaseModel):
     log_id: UUID
     timestamp: datetime
+
+
+class RetentionUpdate(BaseModel):
+    tenant_id: str
+    retention_days: int
+
+
+class DeletionAuditRecord(BaseModel):
+    id: UUID
+    tenant_id: str
+    retention_days: int
+    deleted_before: datetime
+    deleted_count: int
+    run_timestamp: datetime
+
+    class Config:
+        orm_mode = True

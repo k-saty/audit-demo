@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import Column, Text, TIMESTAMP
+from datetime import datetime
+from sqlalchemy import Column, Text, TIMESTAMP, Integer, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
 
@@ -15,3 +16,31 @@ class ConversationAuditLog(Base):
     channel = Column(Text, nullable=False)
     prompt = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
+
+
+class TenantRetention(Base):
+    """Per-tenant retention configuration (days).
+
+    Allowed values: 30, 90, 180. Default can be set per-tenant; if missing a global default is used.
+    """
+
+    __tablename__ = "tenant_retention"
+
+    tenant_id = Column(Text, primary_key=True)
+    retention_days = Column(Integer, nullable=False, default=90)
+
+
+class DeletionAuditLog(Base):
+    """Records automatic deletion runs for compliance auditing.
+
+    Each record represents one tenant's deletion action: when it ran and how many rows were removed.
+    """
+
+    __tablename__ = "deletion_audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(Text, nullable=False)
+    retention_days = Column(Integer, nullable=False)
+    deleted_before = Column(DateTime(timezone=True), nullable=False)
+    deleted_count = Column(Integer, nullable=False)
+    run_timestamp = Column(DateTime(timezone=True), default=datetime.utcnow)
