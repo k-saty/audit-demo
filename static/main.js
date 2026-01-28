@@ -3,6 +3,36 @@ console.log("main.js loaded!");
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOMContentLoaded fired");
 
+    // ============ NAVIGATION ============
+    const navItems = document.querySelectorAll(".nav-item");
+    const contentSections = document.querySelectorAll(".content-section");
+
+    navItems.forEach(item => {
+        item.addEventListener("click", (e) => {
+            e.preventDefault();
+            const sectionId = item.dataset.section;
+
+            // Update active nav item
+            navItems.forEach(nav => nav.classList.remove("active"));
+            item.classList.add("active");
+
+            // Update visible section
+            contentSections.forEach(section => section.classList.remove("active"));
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add("active");
+            }
+        });
+    });
+
+    // Refresh button
+    const refreshBtn = document.getElementById("refreshBtn");
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", () => {
+            location.reload();
+        });
+    }
+
     const form = document.getElementById("logForm");
     const result = document.getElementById("createResult");
     const fetchBtn = document.getElementById("fetchLogs");
@@ -39,22 +69,26 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("complianceExportResult:", complianceExportResult);
     console.log("complianceTenantId:", complianceTenantId);
 
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(form).entries());
-        const resp = await fetch("/audit/log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(form).entries());
+            const resp = await fetch("/audit/log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            if (resp.ok) {
+                const json = await resp.json();
+                result.classList.add("show", "success");
+                result.innerHTML = `✓ Created log ${json.log_id} @ ${json.timestamp}`;
+                form.reset();
+            } else {
+                result.classList.add("show", "error");
+                result.innerHTML = `✗ Error: ${resp.status}`;
+            }
         });
-        if (resp.ok) {
-            const json = await resp.json();
-            result.innerHTML = `<div class="alert success">✓ Created log ${json.log_id} @ ${json.timestamp}</div>`;
-            form.reset();
-        } else {
-            result.innerHTML = `<div class="alert error">✗ Error: ${resp.status}</div>`;
-        }
-    });
+    }
 
     fetchBtn.addEventListener("click", async () => {
         const tenant = queryTenant.value.trim();
@@ -79,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Retention form submit
     if (retentionForm) {
         retentionForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -92,10 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             if (resp.ok) {
                 const j = await resp.json();
-                retentionResult.innerHTML = `<div class="alert success">✓ Retention saved for ${j.tenant_id}: ${j.retention_days} days</div>`;
+                retentionResult.classList.add("show", "success");
+                retentionResult.innerHTML = `✓ Retention saved for ${j.tenant_id}: ${j.retention_days} days`;
                 retentionForm.reset();
             } else {
-                retentionResult.innerHTML = `<div class="alert error">✗ Error: ${resp.status}</div>`;
+                retentionResult.classList.add("show", "error");
+                retentionResult.innerHTML = `✗ Error: ${resp.status}`;
             }
         });
     }
@@ -144,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ============ PII DETECTION UI ============
 
-    // Fetch PII Summary
+    // View PII Summary
     if (fetchPiiSummaryBtn) {
         fetchPiiSummaryBtn.addEventListener('click', async () => {
             const tenant = piiTenant.value.trim();
@@ -161,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="pii-stat-label">Total Detections</div>
                     </div>
                     <div class="pii-stat">
-                        <div class="pii-stat-value" style="color: #ff4444;">${data.high_risk_count}</div>
+                        <div class="pii-stat-value" style="color: #d63a2b;">${data.high_risk_count}</div>
                         <div class="pii-stat-label">High Risk Items</div>
                     </div>
                 </div>
@@ -314,10 +349,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ============ COMPLIANCE EXPORT ============
-
-    console.log("Setting up compliance export handler, form exists:", !!complianceExportForm);
-
     if (complianceExportForm) {
         console.log("Attaching compliance export form listener");
         complianceExportForm.addEventListener('submit', async (e) => {
@@ -327,12 +358,15 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Compliance export clicked, tenant:", tenantId);
 
             if (!tenantId) {
-                complianceExportResult.innerHTML = `<div class="alert error">✗ Enter tenant ID</div>`;
+                complianceExportResult.classList.add("show", "error");
+                complianceExportResult.innerHTML = `✗ Enter tenant ID`;
                 return;
             }
 
             try {
-                complianceExportResult.innerHTML = `<div class="alert warning">⏳ Generating compliance pack...</div>`;
+                complianceExportResult.classList.add("show");
+                complianceExportResult.classList.remove("error", "success");
+                complianceExportResult.innerHTML = `⏳ Generating compliance pack...`;
                 const url = `/compliance/export?tenant_id=${encodeURIComponent(tenantId)}`;
                 console.log("Fetching:", url);
 
@@ -346,9 +380,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("Response text:", text);
                     try {
                         const error = JSON.parse(text);
-                        complianceExportResult.innerHTML = `<div class="alert error">✗ Error: ${error.error || response.statusText}</div>`;
+                        complianceExportResult.classList.add("error");
+                        complianceExportResult.innerHTML = `✗ Error: ${error.error || response.statusText}`;
                     } catch {
-                        complianceExportResult.innerHTML = `<div class="alert error">✗ Error: ${response.statusText}</div>`;
+                        complianceExportResult.classList.add("error");
+                        complianceExportResult.innerHTML = `✗ Error: ${response.statusText}`;
                     }
                     return;
                 }
@@ -379,16 +415,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.URL.revokeObjectURL(urlObj);
                 document.body.removeChild(a);
 
+                complianceExportResult.classList.add("success");
+                complianceExportResult.classList.remove("error");
                 complianceExportResult.innerHTML = `
-                    <div class="alert success">
-                        ✓ Compliance pack downloaded successfully!<br>
-                        <small>File: ${filename}</small>
-                    </div>
+                    ✓ Compliance pack downloaded successfully!<br>
+                    <small>File: ${filename}</small>
                 `;
                 complianceExportForm.reset();
             } catch (error) {
                 console.error("Export error:", error);
-                complianceExportResult.innerHTML = `<div class="alert error">✗ Export failed: ${error.message}</div>`;
+                complianceExportResult.classList.add("error");
+                complianceExportResult.classList.remove("success");
+                complianceExportResult.innerHTML = `✗ Export failed: ${error.message}`;
             }
         });
     }

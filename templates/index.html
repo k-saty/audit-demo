@@ -1,137 +1,437 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Audit Demo Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-  <body>
-    <main>
-      <h1>Conversation Audit Logs</h1>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliance Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">⬜</span>
+                    <span class="logo-text">Compliance</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-section="audit-logs">
+                    <span class="nav-icon">📋</span>
+                    <span>Audit Logs</span>
+                </a>
+                <a href="#" class="nav-item" data-section="pii-detection">
+                    <span class="nav-icon">🔍</span>
+                    <span>PII Detection</span>
+                </a>
+                <a href="#" class="nav-item" data-section="risk-reports">
+                    <span class="nav-icon">⚠️</span>
+                    <span>Risk Reports</span>
+                </a>
+                <a href="#" class="nav-item" data-section="compliance-export">
+                    <span class="nav-icon">📦</span>
+                    <span>Export</span>
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
 
-      <section id="create">
-        <h2>Create log</h2>
-        <form id="logForm">
-          <label>Tenant ID: <input name="tenant_id" required /></label>
-          <label>Agent ID: <input name="agent_id" required /></label>
-          <label>Session ID: <input name="session_id" required /></label>
-          <label>Channel: <input name="channel" required /></label>
-          <label>Prompt: <textarea name="prompt" required></textarea></label>
-          <label>Response: <textarea name="response" required></textarea></label>
-          <button type="submit">Send log</button>
-        </form>
-        <div id="createResult"></div>
-      </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 class="page-title">Compliance & Audit Dashboard</h1>
+                    <p class="page-subtitle">Real-time monitoring and reporting</p>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" id="refreshBtn" title="Refresh">
+                        🔄 Refresh
+                    </button>
+                    <div class="user-profile">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name">Compliance Officer</span>
+                    </div>
+                </div>
+            </header>
 
-      <section id="list">
-        <h2>View logs</h2>
-        <label>Tenant ID: <input id="queryTenant" /></label>
-        <button id="fetchLogs">Fetch logs</button>
-        <div id="logsCount"></div>
-        <table id="logsTable">
-          <thead><tr><th>ID</th><th>Timestamp</th><th>Agent</th><th>Session</th><th>Channel</th><th>Prompt</th><th>Response</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </section>
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #0066cc, #0052a3);">✓</div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Compliance Score</p>
+                            <p class="kpi-value">98.5%</p>
+                            <p class="kpi-meta">↑ 2.3% this month</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #ff6b35, #d63a2b);">⚠</div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Open Risks</p>
+                            <p class="kpi-value">3</p>
+                            <p class="kpi-meta">1 high priority</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #ffa500, #e67e22);">✗</div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Policy Violations</p>
+                            <p class="kpi-value">5</p>
+                            <p class="kpi-meta">2 resolved today</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">✓</div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Audit Status</p>
+                            <p class="kpi-value">On Track</p>
+                            <p class="kpi-meta">45 days remaining</p>
+                        </div>
+                    </div>
+                </div>
 
-      <section id="pii">
-        <h2>PII Detection Dashboard</h2>
-        
-        <div class="card">
-          <h3>PII Summary</h3>
-          <label>Tenant ID: <input id="piiTenant" /></label>
-          <button id="fetchPiiSummary">View PII Summary</button>
-          <div id="piiSummaryResult"></div>
-        </div>
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h2 class="section-title">Recent Audit Activity</h2>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #e3f2fd;">📝</div>
+                            <div class="activity-content">
+                                <p class="activity-title">New audit log created</p>
+                                <p class="activity-time">2 hours ago</p>
+                            </div>
+                            <span class="activity-status status-success">Compliant</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #fff3e0;">🔍</div>
+                            <div class="activity-content">
+                                <p class="activity-title">PII detection scan completed</p>
+                                <p class="activity-time">4 hours ago</p>
+                            </div>
+                            <span class="activity-status status-warning">Review Needed</span>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: #f3e5f5;">📦</div>
+                            <div class="activity-content">
+                                <p class="activity-title">Compliance export generated</p>
+                                <p class="activity-time">1 day ago</p>
+                            </div>
+                            <span class="activity-status status-success">Completed</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <div class="card">
-          <h3>All PII Detections</h3>
-          <label>Tenant ID (optional): <input id="piiLogsFilter" /></label>
-          <label>Risk Level: 
-            <select id="piiRiskFilter">
-              <option value="">All</option>
-              <option value="high">High Risk Only</option>
-              <option value="medium">Medium Risk Only</option>
-              <option value="low">Low Risk Only</option>
-            </select>
-          </label>
-          <button id="fetchPiiLogs">Fetch PII Logs</button>
-          <div id="piiLogsCount"></div>
-          <table id="piiLogsTable">
-            <thead><tr><th>Detection ID</th><th>Timestamp</th><th>PII Count</th><th>High Risk</th><th>PII Types</th><th>Action</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+            <!-- Audit Logs Section -->
+            <section id="audit-logs" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Audit Logs</h2>
+                    <p class="section-subtitle">Complete audit trail of system activities</p>
+                </div>
 
-        <div class="card" id="piiDetailsCard" style="display: none;">
-          <h3>PII Details</h3>
-          <button id="closePiiDetails" style="float: right;">Close</button>
-          <div id="piiDetailsContent"></div>
-        </div>
-      </section>
+                <!-- Create Log Form -->
+                <div class="card">
+                    <h3 class="card-title">Create Audit Log</h3>
+                    <form id="logForm" class="form-grid">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Tenant ID</label>
+                                <input type="text" name="tenant_id" class="form-input" required placeholder="e.g., org-123">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Agent ID</label>
+                                <input type="text" name="agent_id" class="form-input" required placeholder="e.g., agent-001">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Session ID</label>
+                                <input type="text" name="session_id" class="form-input" required placeholder="e.g., sess-abc123">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Channel</label>
+                                <input type="text" name="channel" class="form-input" required placeholder="e.g., web, api">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Prompt</label>
+                            <textarea name="prompt" class="form-textarea" required placeholder="Enter the prompt text..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Response</label>
+                            <textarea name="response" class="form-textarea" required placeholder="Enter the response text..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Log</button>
+                    </form>
+                    <div id="createResult" class="form-result"></div>
+                </div>
 
-      <section id="compliance">
-        <h2>📦 Compliance Export Pack</h2>
-        <p style="color: #666; font-size: 14px;">Generate audit-ready compliance artifacts in one click. Perfect for regulatory compliance (GDPR, HIPAA, SOC2, etc.)</p>
-        
-        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
-          <h3 style="color: white; margin-top: 0;">1-Click Compliance Export</h3>
-          <p>Generate a complete compliance pack containing:</p>
-          <ul style="margin: 10px 0;">
-            <li>✓ Conversation logs (CSV) - All audit data</li>
-            <li>✓ PII detection logs (CSV) - All detected risks</li>
-            <li>✓ Data sources manifest (JSON) - Complete data lineage</li>
-            <li>✓ Model information (JSON) - Detection methodology</li>
-            <li>✓ Retention policy (JSON) - Data governance settings</li>
-            <li>✓ Compliance metadata (JSON) - Audit trail & timestamps</li>
-          </ul>
-          
-          <form id="complianceExportForm" style="margin-top: 20px;">
-            <label style="color: white; font-weight: bold;">Tenant ID: 
-              <input id="complianceTenantId" required style="padding: 8px; border-radius: 4px; border: none; color: #333;" />
-            </label>
-            <button type="submit" style="background-color: #fff; color: #667eea; font-weight: bold; margin-top: 10px;">
-              📥 Download Compliance Pack
-            </button>
-          </form>
-          <div id="complianceExportResult" style="margin-top: 15px;"></div>
-        </div>
-      </section>
+                <!-- View Logs -->
+                <div class="card">
+                    <h3 class="card-title">View Logs</h3>
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label class="form-label">Tenant ID</label>
+                            <input type="text" id="queryTenant" class="form-input" placeholder="Filter by tenant...">
+                        </div>
+                        <button id="fetchLogs" class="btn btn-secondary">Fetch Logs</button>
+                    </div>
+                    <div id="logsCount" class="result-count"></div>
+                    <div class="table-responsive">
+                        <table id="logsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Timestamp</th>
+                                    <th>Agent</th>
+                                    <th>Session</th>
+                                    <th>Channel</th>
+                                    <th>Prompt</th>
+                                    <th>Response</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-      <section id="admin">
-        <h2>Admin — Retention & Deletion Audits</h2>
+            <!-- PII Detection Section -->
+            <section id="pii-detection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">PII Detection Dashboard</h2>
+                    <p class="section-subtitle">Monitor and manage personally identifiable information</p>
+                </div>
 
-        <div class="card">
-          <h3>Set per-tenant retention</h3>
-          <form id="retentionForm">
-            <label>Tenant ID: <input name="tenant_id" required /></label>
-            <label>Retention days:
-              <select name="retention_days">
-                <option value="30">30</option>
-                <option value="90" selected>90</option>
-                <option value="180">180</option>
-              </select>
-            </label>
-            <button type="submit">Set retention</button>
-          </form>
-          <div id="retentionResult"></div>
-        </div>
+                <!-- PII Summary -->
+                <div class="card">
+                    <h3 class="card-title">PII Summary</h3>
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label class="form-label">Tenant ID</label>
+                            <input type="text" id="piiTenant" class="form-input" placeholder="Enter tenant ID...">
+                        </div>
+                        <button id="fetchPiiSummary" class="btn btn-secondary">View Summary</button>
+                    </div>
+                    <div id="piiSummaryResult"></div>
+                </div>
 
-        <div class="card">
-          <h3>View deletion audits</h3>
-          <label>Tenant ID (optional): <input id="auditTenant" /></label>
-          <button id="fetchAudits">Fetch deletion audits</button>
-          <button id="runCleanup">Run cleanup (demo only)</button>
-          <div id="auditsCount"></div>
-          <table id="auditsTable">
-            <thead><tr><th>ID</th><th>Tenant</th><th>Retention</th><th>Deleted Before</th><th>Deleted Count</th><th>Run Timestamp</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+                <!-- All PII Detections -->
+                <div class="card">
+                    <h3 class="card-title">PII Detections</h3>
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label class="form-label">Tenant ID (Optional)</label>
+                            <input type="text" id="piiLogsFilter" class="form-input" placeholder="Filter by tenant...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Risk Level</label>
+                            <select id="piiRiskFilter" class="form-input">
+                                <option value="">All Levels</option>
+                                <option value="high">High Risk</option>
+                                <option value="medium">Medium Risk</option>
+                                <option value="low">Low Risk</option>
+                            </select>
+                        </div>
+                        <button id="fetchPiiLogs" class="btn btn-secondary">Fetch Detections</button>
+                    </div>
+                    <div id="piiLogsCount" class="result-count"></div>
+                    <div class="table-responsive">
+                        <table id="piiLogsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Detection ID</th>
+                                    <th>Timestamp</th>
+                                    <th>PII Count</th>
+                                    <th>High Risk</th>
+                                    <th>PII Types</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PII Details -->
+                <div class="card" id="piiDetailsCard" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">PII Details</h3>
+                        <button id="closePiiDetails" class="btn btn-ghost">✕</button>
+                    </div>
+                    <div id="piiDetailsContent"></div>
+                </div>
+            </section>
+
+            <!-- Risk Reports Section -->
+            <section id="risk-reports" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Risk Reports</h2>
+                    <p class="section-subtitle">Enterprise risk analysis and recommendations</p>
+                </div>
+
+                <div class="risk-grid">
+                    <div class="risk-card risk-high">
+                        <div class="risk-header">
+                            <span class="risk-badge">HIGH</span>
+                            <span class="risk-id">RISK-001</span>
+                        </div>
+                        <p class="risk-title">Unencrypted PII Transmission</p>
+                        <p class="risk-description">Some conversation logs contain unencrypted PII data.</p>
+                        <p class="risk-meta">Reported: 2 hours ago</p>
+                        <button class="btn btn-small">Review</button>
+                    </div>
+                    <div class="risk-card risk-medium">
+                        <div class="risk-header">
+                            <span class="risk-badge">MEDIUM</span>
+                            <span class="risk-id">RISK-002</span>
+                        </div>
+                        <p class="risk-title">Policy Version Mismatch</p>
+                        <p class="risk-description">Retention policy differs from configured standards.</p>
+                        <p class="risk-meta">Reported: 1 day ago</p>
+                        <button class="btn btn-small">Review</button>
+                    </div>
+                    <div class="risk-card risk-low">
+                        <div class="risk-header">
+                            <span class="risk-badge">LOW</span>
+                            <span class="risk-id">RISK-003</span>
+                        </div>
+                        <p class="risk-title">Documentation Outdated</p>
+                        <p class="risk-description">Some audit documentation needs updates.</p>
+                        <p class="risk-meta">Reported: 3 days ago</p>
+                        <button class="btn btn-small">Review</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Compliance Export Section -->
+            <section id="compliance-export" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Compliance Export</h2>
+                    <p class="section-subtitle">Generate audit-ready compliance packages</p>
+                </div>
+
+                <div class="card export-card">
+                    <div class="export-header">
+                        <div>
+                            <h3 class="card-title">1-Click Compliance Package</h3>
+                            <p class="card-subtitle">Generate comprehensive compliance artifacts for regulatory submissions</p>
+                        </div>
+                    </div>
+                    <div class="export-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Conversation logs (CSV)</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>PII detection logs (CSV)</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Data sources manifest (JSON)</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Model information (JSON)</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Retention policy (JSON)</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Compliance metadata (JSON)</span>
+                        </div>
+                    </div>
+                    <form id="complianceExportForm" class="export-form">
+                        <div class="form-group">
+                            <label class="form-label">Tenant ID</label>
+                            <input type="text" id="complianceTenantId" class="form-input" required placeholder="e.g., org-123">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large">
+                            📥 Download Compliance Pack
+                        </button>
+                    </form>
+                    <div id="complianceExportResult" class="form-result"></div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Settings</h2>
+                    <p class="section-subtitle">Manage retention policies and deletion audits</p>
+                </div>
+
+                <!-- Retention Settings -->
+                <div class="card">
+                    <h3 class="card-title">Retention Policy</h3>
+                    <form id="retentionForm" class="form-grid">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Tenant ID</label>
+                                <input type="text" name="tenant_id" class="form-input" required placeholder="e.g., org-123">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Retention Period (Days)</label>
+                                <select name="retention_days" class="form-input">
+                                    <option value="30">30 days</option>
+                                    <option value="90" selected>90 days</option>
+                                    <option value="180">180 days</option>
+                                    <option value="365">365 days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Retention Policy</button>
+                    </form>
+                    <div id="retentionResult" class="form-result"></div>
+                </div>
+
+                <!-- Deletion Audits -->
+                <div class="card">
+                    <h3 class="card-title">Deletion Audit Trail</h3>
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label class="form-label">Tenant ID (Optional)</label>
+                            <input type="text" id="auditTenant" class="form-input" placeholder="Filter by tenant...">
+                        </div>
+                        <button id="fetchAudits" class="btn btn-secondary">Fetch Audits</button>
+                        <button id="runCleanup" class="btn btn-warning">Run Cleanup</button>
+                    </div>
+                    <div id="auditsCount" class="result-count"></div>
+                    <div class="table-responsive">
+                        <table id="auditsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tenant</th>
+                                    <th>Retention</th>
+                                    <th>Deleted Before</th>
+                                    <th>Deleted Count</th>
+                                    <th>Run Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script src="/static/main.js"></script>
-  </body>
+</body>
 </html>
