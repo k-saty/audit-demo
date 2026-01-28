@@ -998,6 +998,26 @@ body {
     background: #94a3b8;
 }
 
+/* PII Details scrollable content */
+pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: #f5f7fa;
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
 /* ==================== ANIMATIONS ==================== */
 @keyframes slideIn {
     from {

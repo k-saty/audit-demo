@@ -274,36 +274,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Show original audit log (prompt and response)
         if (data.audit_log) {
-            html += `<div class="card" style="margin-top: 15px; background-color: #f0f0f0;">`;
-            html += `<h5>Original Conversation:</h5>`;
-            html += `<p><strong>Agent ID:</strong> ${data.audit_log.agent_id} | <strong>Session:</strong> ${data.audit_log.session_id} | <strong>Channel:</strong> ${data.audit_log.channel}</p>`;
-            html += `<div style="margin-top: 10px;">`;
-            html += `<strong style="display: block; margin-bottom: 5px;">📨 Prompt:</strong>`;
-            html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff;">${escapeHtml(data.audit_log.prompt)}</pre>`;
+            html += `<div class="card" style="margin-top: 15px; background-color: #f8f9fb;">`;
+            html += `<h5 style="margin: 0 0 12px 0; color: #001a4d;">📋 Original Conversation</h5>`;
+            html += `<p style="font-size: 13px; color: #666d7a; margin-bottom: 12px;"><strong>Agent:</strong> ${data.audit_log.agent_id} | <strong>Session:</strong> ${data.audit_log.session_id} | <strong>Channel:</strong> ${data.audit_log.channel}</p>`;
+
+            html += `<div style="margin-bottom: 16px;">`;
+            html += `<strong style="display: block; margin-bottom: 8px; font-size: 13px; color: #0066cc;">📨 Prompt</strong>`;
+            html += `<div style="background-color: #fff; border-radius: 6px; border-left: 4px solid #0066cc; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+            html += `<pre style="margin: 0; padding: 12px; font-size: 13px; line-height: 1.5; max-height: 250px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; color: #1a2332;">${escapeHtml(data.audit_log.prompt)}</pre>`;
             html += `</div>`;
-            html += `<div style="margin-top: 10px;">`;
-            html += `<strong style="display: block; margin-bottom: 5px;">💬 Response:</strong>`;
-            html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745;">${escapeHtml(data.audit_log.response)}</pre>`;
+            html += `</div>`;
+
+            html += `<div>`;
+            html += `<strong style="display: block; margin-bottom: 8px; font-size: 13px; color: #28a745;">💬 Response</strong>`;
+            html += `<div style="background-color: #fff; border-radius: 6px; border-left: 4px solid #28a745; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+            html += `<pre style="margin: 0; padding: 12px; font-size: 13px; line-height: 1.5; max-height: 250px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; color: #1a2332;">${escapeHtml(data.audit_log.response)}</pre>`;
+            html += `</div>`;
             html += `</div>`;
             html += `</div>`;
         }
 
         // Show NER API Response
         if (data.ner_response_prompt || data.ner_response_response) {
-            html += `<div class="card" style="margin-top: 15px; background-color: #f9f9f9; border: 2px solid #007bff;">`;
-            html += `<h5>🤖 Hugging Face NER API Response</h5>`;
+            html += `<div class="card" style="margin-top: 16px; background-color: #f8f9fb; border: 2px solid #0066cc;">`;
+            html += `<h5 style="margin: 0 0 12px 0; color: #001a4d;">🤖 Hugging Face NER API Response</h5>`;
 
             if (data.ner_response_prompt) {
-                html += `<div style="margin-bottom: 15px;">`;
-                html += `<strong style="display: block; margin-bottom: 8px; color: #007bff;">Prompt NER Results:</strong>`;
-                html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff; font-size: 12px; max-height: 300px; overflow-y: auto;">${escapeHtml(JSON.stringify(data.ner_response_prompt, null, 2))}</pre>`;
+                html += `<div style="margin-bottom: 16px;">`;
+                html += `<strong style="display: block; margin-bottom: 8px; font-size: 13px; color: #0066cc;">Prompt NER Results</strong>`;
+                html += `<div style="background-color: #fff; border-radius: 6px; border-left: 4px solid #0066cc; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+                html += `<pre style="margin: 0; padding: 12px; font-size: 12px; line-height: 1.4; max-height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; color: #1a2332;">${escapeHtml(JSON.stringify(data.ner_response_prompt, null, 2))}</pre>`;
+                html += `</div>`;
                 html += `</div>`;
             }
 
             if (data.ner_response_response) {
                 html += `<div>`;
-                html += `<strong style="display: block; margin-bottom: 8px; color: #28a745;">Response NER Results:</strong>`;
-                html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745; font-size: 12px; max-height: 300px; overflow-y: auto;">${escapeHtml(JSON.stringify(data.ner_response_response, null, 2))}</pre>`;
+                html += `<strong style="display: block; margin-bottom: 8px; font-size: 13px; color: #28a745;">Response NER Results</strong>`;
+                html += `<div style="background-color: #fff; border-radius: 6px; border-left: 4px solid #28a745; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+                html += `<pre style="margin: 0; padding: 12px; font-size: 12px; line-height: 1.4; max-height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; color: #1a2332;">${escapeHtml(JSON.stringify(data.ner_response_response, null, 2))}</pre>`;
+                html += `</div>`;
                 html += `</div>`;
             }
 
