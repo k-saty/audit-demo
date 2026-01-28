@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, Text, TIMESTAMP, Integer, DateTime
+from sqlalchemy import Column, Text, TIMESTAMP, Integer, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
 
@@ -16,6 +16,7 @@ class ConversationAuditLog(Base):
     channel = Column(Text, nullable=False)
     prompt = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
+    model_info = Column(Text, nullable=False, default="default")
 
 
 class TenantRetention(Base):
@@ -44,3 +45,31 @@ class DeletionAuditLog(Base):
     deleted_before = Column(DateTime(timezone=True), nullable=False)
     deleted_count = Column(Integer, nullable=False)
     run_timestamp = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class PIIDetectionLog(Base):
+    """Records PII detection results for audit logs.
+
+    Stores detected PII entities (email, phone, name, etc.) from conversation logs.
+    """
+
+    __tablename__ = "pii_detection_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    audit_log_id = Column(UUID(as_uuid=True), nullable=False)
+    tenant_id = Column(Text, nullable=False)
+    detection_timestamp = Column(TIMESTAMP(timezone=True), default=datetime.utcnow)
+    pii_detected = Column(
+        JSON, nullable=False
+    )  # list of {type, value, field, risk_level}
+    pii_count = Column(Integer, nullable=False, default=0)
+    fields_scanned = Column(JSON, nullable=False)  # ["prompt", "response"]
+    ner_response_prompt = Column(JSON, nullable=True)  # NER API response for prompt
+    ner_response_response = Column(JSON, nullable=True)  # NER API response for response
+    ner_response_prompt = Column(JSON, nullable=True)  # Raw NER API response for prompt
+    ner_response_response = Column(
+        JSON, nullable=True
+    )  # Raw NER API response for response
+    ner_model_info = Column(
+        Text, nullable=False, default="dslim/bert-base-NER"
+    )  # NER model used

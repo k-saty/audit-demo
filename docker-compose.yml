@@ -12,6 +12,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/audit_demo
+      HF_TOKEN: ${HF_TOKEN}
     depends_on:
       - db
 

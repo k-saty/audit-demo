@@ -10,6 +10,9 @@ class AuditLogCreate(BaseModel):
     channel: str
     prompt: str
     response: str
+    model_info: str = (
+        "default"  # Model name/version used (e.g., 'gpt-4', 'claude-3', etc.)
+    )
 
 
 class AuditLogResponse(BaseModel):

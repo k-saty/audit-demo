@@ -2,14 +2,41 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from sqlalchemy import select, delete, func
 
-from models import ConversationAuditLog, TenantRetention, DeletionAuditLog
+from models import (
+    ConversationAuditLog,
+    TenantRetention,
+    DeletionAuditLog,
+    PIIDetectionLog,
+)
+from pii_detector import scan_audit_log_for_pii
 
 
 def create_log(db: Session, data):
+    """Create audit log and scan for PII."""
     log = ConversationAuditLog(timestamp=datetime.utcnow(), **data.dict())
     db.add(log)
     db.commit()
     db.refresh(log)
+
+    # Scan for PII
+    pii_results = scan_audit_log_for_pii(data.prompt, data.response)
+
+    # Store PII detection results
+    if pii_results["total_pii_found"] > 0 or pii_results["high_risk_count"] > 0:
+        pii_log = PIIDetectionLog(
+            audit_log_id=log.id,
+            tenant_id=data.tenant_id,
+            pii_detected=pii_results["pii_list"],
+            pii_count=pii_results["total_pii_found"],
+            fields_scanned=pii_results["fields_scanned"],
+            ner_response_prompt=pii_results.get("ner_response_prompt"),
+            ner_response_response=pii_results.get("ner_response_response"),
+        )
+        db.add(pii_log)
+        db.commit()
+
+    return log
+
     return log
 
 

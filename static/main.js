@@ -1,4 +1,8 @@
+console.log("main.js loaded!");
+
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOMContentLoaded fired");
+
     const form = document.getElementById("logForm");
     const result = document.getElementById("createResult");
     const fetchBtn = document.getElementById("fetchLogs");
@@ -14,6 +18,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const auditsCount = document.getElementById("auditsCount");
     const runCleanupBtn = document.getElementById("runCleanup");
 
+    // PII elements
+    const fetchPiiSummaryBtn = document.getElementById("fetchPiiSummary");
+    const piiTenant = document.getElementById("piiTenant");
+    const piiSummaryResult = document.getElementById("piiSummaryResult");
+    const fetchPiiLogsBtn = document.getElementById("fetchPiiLogs");
+    const piiLogsFilter = document.getElementById("piiLogsFilter");
+    const piiRiskFilter = document.getElementById("piiRiskFilter");
+    const piiLogsTableBody = document.querySelector("#piiLogsTable tbody");
+    const piiLogsCount = document.getElementById("piiLogsCount");
+    const piiDetailsCard = document.getElementById("piiDetailsCard");
+    const closePiiDetailsBtn = document.getElementById("closePiiDetails");
+
+    // Compliance export elements
+    const complianceExportForm = document.getElementById("complianceExportForm");
+    const complianceExportResult = document.getElementById("complianceExportResult");
+    const complianceTenantId = document.getElementById("complianceTenantId");
+
+    console.log("complianceExportForm:", complianceExportForm);
+    console.log("complianceExportResult:", complianceExportResult);
+    console.log("complianceTenantId:", complianceTenantId);
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(form).entries());
@@ -24,10 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         if (resp.ok) {
             const json = await resp.json();
-            result.textContent = `Created log ${json.log_id} @ ${json.timestamp}`;
+            result.innerHTML = `<div class="alert success">✓ Created log ${json.log_id} @ ${json.timestamp}</div>`;
             form.reset();
         } else {
-            result.textContent = `Error: ${resp.status}`;
+            result.innerHTML = `<div class="alert error">✗ Error: ${resp.status}</div>`;
         }
     });
 
@@ -67,10 +92,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             if (resp.ok) {
                 const j = await resp.json();
-                retentionResult.textContent = `Retention saved for ${j.tenant_id}: ${j.retention_days} days`;
+                retentionResult.innerHTML = `<div class="alert success">✓ Retention saved for ${j.tenant_id}: ${j.retention_days} days</div>`;
                 retentionForm.reset();
             } else {
-                retentionResult.textContent = `Error: ${resp.status}`;
+                retentionResult.innerHTML = `<div class="alert error">✗ Error: ${resp.status}</div>`;
             }
         });
     }
@@ -113,6 +138,257 @@ document.addEventListener("DOMContentLoaded", () => {
             } finally {
                 runCleanupBtn.disabled = false;
                 runCleanupBtn.textContent = 'Run cleanup (demo only)';
+            }
+        });
+    }
+
+    // ============ PII DETECTION UI ============
+
+    // Fetch PII Summary
+    if (fetchPiiSummaryBtn) {
+        fetchPiiSummaryBtn.addEventListener('click', async () => {
+            const tenant = piiTenant.value.trim();
+            if (!tenant) return alert("Enter tenant ID");
+
+            const resp = await fetch(`/pii/summary?tenant_id=${encodeURIComponent(tenant)}`);
+            if (!resp.ok) return alert(`Failed to fetch PII summary: ${resp.status}`);
+
+            const data = await resp.json();
+            let html = `
+                <div class="pii-summary">
+                    <div class="pii-stat">
+                        <div class="pii-stat-value">${data.total_pii_detections}</div>
+                        <div class="pii-stat-label">Total Detections</div>
+                    </div>
+                    <div class="pii-stat">
+                        <div class="pii-stat-value" style="color: #ff4444;">${data.high_risk_count}</div>
+                        <div class="pii-stat-label">High Risk Items</div>
+                    </div>
+                </div>
+            `;
+
+            if (Object.keys(data.pii_type_breakdown).length > 0) {
+                html += '<h4>PII Types Detected:</h4><ul>';
+                for (const [type, count] of Object.entries(data.pii_type_breakdown)) {
+                    html += `<li><strong>${type}:</strong> ${count} occurrences</li>`;
+                }
+                html += '</ul>';
+            }
+
+            if (data.recent_detections.length > 0) {
+                html += '<h4>Recent Detections:</h4><ul>';
+                for (const det of data.recent_detections) {
+                    const badge = det.high_risk ? '<span class="pii-badge high">HIGH RISK</span>' : '';
+                    const types = det.pii_types.join(', ');
+                    html += `<li>${det.timestamp} - ${det.pii_count} items (${types}) ${badge}</li>`;
+                }
+                html += '</ul>';
+            }
+
+            piiSummaryResult.innerHTML = html;
+        });
+    }
+
+    // Fetch PII Logs with filtering
+    if (fetchPiiLogsBtn) {
+        fetchPiiLogsBtn.addEventListener('click', async () => {
+            const tenant = piiLogsFilter.value.trim();
+            const riskLevel = piiRiskFilter.value;
+
+            let url = '/pii/logs';
+            const params = new URLSearchParams();
+            if (tenant) params.append('tenant_id', tenant);
+            if (riskLevel) params.append('risk_level', riskLevel);
+            if (params.toString()) url += '?' + params.toString();
+
+            const resp = await fetch(url);
+            if (!resp.ok) return alert(`Failed to fetch PII logs: ${resp.status}`);
+
+            const data = await resp.json();
+            piiLogsCount.textContent = `Found: ${data.count}`;
+            piiLogsTableBody.innerHTML = '';
+
+            for (const log of data.logs) {
+                const tr = document.createElement('tr');
+                const highRiskBadge = log.high_risk ? '<span class="pii-badge high">HIGH</span>' : '<span class="pii-badge low">LOW</span>';
+                const typesList = log.pii_types.join(', ');
+                tr.innerHTML = `
+                    <td>${log.detection_id.substring(0, 8)}...</td>
+                    <td>${log.timestamp}</td>
+                    <td>${log.pii_count}</td>
+                    <td>${highRiskBadge}</td>
+                    <td>${typesList}</td>
+                    <td><button onclick="viewPiiDetails('${log.detection_id}')">View</button></td>
+                `;
+                piiLogsTableBody.appendChild(tr);
+            }
+        });
+    }
+
+    // View PII Details
+    window.viewPiiDetails = async (detectionId) => {
+        const resp = await fetch(`/pii/details/${detectionId}`);
+        if (!resp.ok) return alert(`Failed to fetch details: ${resp.status}`);
+
+        const data = await resp.json();
+        let html = `<h4>Detection Details</h4>`;
+        html += `<p><strong>Audit Log ID:</strong> ${data.audit_log_id}</p>`;
+        html += `<p><strong>Timestamp:</strong> ${data.detection_timestamp}</p>`;
+        html += `<p><strong>Total PII Found:</strong> <strong style="color: #ff4444;">${data.pii_count}</strong></p>`;
+        html += `<p><strong>Fields Scanned:</strong> ${data.fields_scanned.join(', ')}</p>`;
+
+        // Show original audit log (prompt and response)
+        if (data.audit_log) {
+            html += `<div class="card" style="margin-top: 15px; background-color: #f0f0f0;">`;
+            html += `<h5>Original Conversation:</h5>`;
+            html += `<p><strong>Agent ID:</strong> ${data.audit_log.agent_id} | <strong>Session:</strong> ${data.audit_log.session_id} | <strong>Channel:</strong> ${data.audit_log.channel}</p>`;
+            html += `<div style="margin-top: 10px;">`;
+            html += `<strong style="display: block; margin-bottom: 5px;">📨 Prompt:</strong>`;
+            html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff;">${escapeHtml(data.audit_log.prompt)}</pre>`;
+            html += `</div>`;
+            html += `<div style="margin-top: 10px;">`;
+            html += `<strong style="display: block; margin-bottom: 5px;">💬 Response:</strong>`;
+            html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745;">${escapeHtml(data.audit_log.response)}</pre>`;
+            html += `</div>`;
+            html += `</div>`;
+        }
+
+        // Show NER API Response
+        if (data.ner_response_prompt || data.ner_response_response) {
+            html += `<div class="card" style="margin-top: 15px; background-color: #f9f9f9; border: 2px solid #007bff;">`;
+            html += `<h5>🤖 Hugging Face NER API Response</h5>`;
+
+            if (data.ner_response_prompt) {
+                html += `<div style="margin-bottom: 15px;">`;
+                html += `<strong style="display: block; margin-bottom: 8px; color: #007bff;">Prompt NER Results:</strong>`;
+                html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff; font-size: 12px; max-height: 300px; overflow-y: auto;">${escapeHtml(JSON.stringify(data.ner_response_prompt, null, 2))}</pre>`;
+                html += `</div>`;
+            }
+
+            if (data.ner_response_response) {
+                html += `<div>`;
+                html += `<strong style="display: block; margin-bottom: 8px; color: #28a745;">Response NER Results:</strong>`;
+                html += `<pre style="background-color: #fff; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745; font-size: 12px; max-height: 300px; overflow-y: auto;">${escapeHtml(JSON.stringify(data.ner_response_response, null, 2))}</pre>`;
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+        }
+
+        if (data.high_risk_items.length > 0) {
+            html += `<h5 style="margin-top: 20px;">🚨 High Risk Items:</h5>`;
+            for (const item of data.high_risk_items) {
+                html += `
+                    <div class="pii-item high">
+                        <strong>Type:</strong> ${item.type}<br>
+                        <strong>Field:</strong> ${item.field}<br>
+                        <strong>Value:</strong> <code>${escapeHtml(item.value)}</code>
+                    </div>
+                `;
+            }
+        }
+
+        if (data.details.length > 0) {
+            html += `<h5>All Detected Items:</h5>`;
+            for (const item of data.details) {
+                const riskClass = item.risk_level || 'low';
+                html += `
+                    <div class="pii-item ${riskClass}">
+                        <span class="pii-badge ${riskClass}">${item.risk_level.toUpperCase()}</span>
+                        <strong>${item.type}</strong> in ${item.field}<br>
+                        <code>${escapeHtml(item.value)}</code>
+                    </div>
+                `;
+            }
+        }
+
+        piiDetailsCard.style.display = 'block';
+        document.getElementById('piiDetailsContent').innerHTML = html;
+        piiDetailsCard.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Close PII Details
+    if (closePiiDetailsBtn) {
+        closePiiDetailsBtn.addEventListener('click', () => {
+            piiDetailsCard.style.display = 'none';
+        });
+    }
+
+    // ============ COMPLIANCE EXPORT ============
+
+    console.log("Setting up compliance export handler, form exists:", !!complianceExportForm);
+
+    if (complianceExportForm) {
+        console.log("Attaching compliance export form listener");
+        complianceExportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log("Compliance form submitted!");
+            const tenantId = complianceTenantId.value.trim();
+            console.log("Compliance export clicked, tenant:", tenantId);
+
+            if (!tenantId) {
+                complianceExportResult.innerHTML = `<div class="alert error">✗ Enter tenant ID</div>`;
+                return;
+            }
+
+            try {
+                complianceExportResult.innerHTML = `<div class="alert warning">⏳ Generating compliance pack...</div>`;
+                const url = `/compliance/export?tenant_id=${encodeURIComponent(tenantId)}`;
+                console.log("Fetching:", url);
+
+                const response = await fetch(url);
+                console.log("Response status:", response.status);
+                console.log("Response headers:", response.headers);
+
+                if (!response.ok) {
+                    console.log("Response not ok, trying to parse as JSON");
+                    const text = await response.text();
+                    console.log("Response text:", text);
+                    try {
+                        const error = JSON.parse(text);
+                        complianceExportResult.innerHTML = `<div class="alert error">✗ Error: ${error.error || response.statusText}</div>`;
+                    } catch {
+                        complianceExportResult.innerHTML = `<div class="alert error">✗ Error: ${response.statusText}</div>`;
+                    }
+                    return;
+                }
+
+                // Download the ZIP file
+                console.log("Getting blob...");
+                const blob = await response.blob();
+                console.log("Blob size:", blob.size);
+
+                const urlObj = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = urlObj;
+
+                // Extract filename from Content-Disposition header if available
+                const disposition = response.headers.get('content-disposition');
+                let filename = `compliance_export_${tenantId}.zip`;
+                if (disposition) {
+                    const matches = disposition.match(/filename=([^;]+)/);
+                    if (matches && matches[1]) {
+                        filename = matches[1].replace(/"/g, '');
+                    }
+                }
+
+                console.log("Downloading as:", filename);
+                a.setAttribute('download', filename);
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(urlObj);
+                document.body.removeChild(a);
+
+                complianceExportResult.innerHTML = `
+                    <div class="alert success">
+                        ✓ Compliance pack downloaded successfully!<br>
+                        <small>File: ${filename}</small>
+                    </div>
+                `;
+                complianceExportForm.reset();
+            } catch (error) {
+                console.error("Export error:", error);
+                complianceExportResult.innerHTML = `<div class="alert error">✗ Export failed: ${error.message}</div>`;
             }
         });
     }

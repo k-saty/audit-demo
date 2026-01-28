@@ -8,7 +8,7 @@
   </head>
   <body>
     <main>
-      <h1>Conversation Audit Logs — Demo</h1>
+      <h1>Conversation Audit Logs</h1>
 
       <section id="create">
         <h2>Create log</h2>
@@ -35,8 +35,72 @@
         </table>
       </section>
 
+      <section id="pii">
+        <h2>PII Detection Dashboard</h2>
+        
+        <div class="card">
+          <h3>PII Summary</h3>
+          <label>Tenant ID: <input id="piiTenant" /></label>
+          <button id="fetchPiiSummary">View PII Summary</button>
+          <div id="piiSummaryResult"></div>
+        </div>
+
+        <div class="card">
+          <h3>All PII Detections</h3>
+          <label>Tenant ID (optional): <input id="piiLogsFilter" /></label>
+          <label>Risk Level: 
+            <select id="piiRiskFilter">
+              <option value="">All</option>
+              <option value="high">High Risk Only</option>
+              <option value="medium">Medium Risk Only</option>
+              <option value="low">Low Risk Only</option>
+            </select>
+          </label>
+          <button id="fetchPiiLogs">Fetch PII Logs</button>
+          <div id="piiLogsCount"></div>
+          <table id="piiLogsTable">
+            <thead><tr><th>Detection ID</th><th>Timestamp</th><th>PII Count</th><th>High Risk</th><th>PII Types</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="piiDetailsCard" style="display: none;">
+          <h3>PII Details</h3>
+          <button id="closePiiDetails" style="float: right;">Close</button>
+          <div id="piiDetailsContent"></div>
+        </div>
+      </section>
+
+      <section id="compliance">
+        <h2>📦 Compliance Export Pack</h2>
+        <p style="color: #666; font-size: 14px;">Generate audit-ready compliance artifacts in one click. Perfect for regulatory compliance (GDPR, HIPAA, SOC2, etc.)</p>
+        
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+          <h3 style="color: white; margin-top: 0;">1-Click Compliance Export</h3>
+          <p>Generate a complete compliance pack containing:</p>
+          <ul style="margin: 10px 0;">
+            <li>✓ Conversation logs (CSV) - All audit data</li>
+            <li>✓ PII detection logs (CSV) - All detected risks</li>
+            <li>✓ Data sources manifest (JSON) - Complete data lineage</li>
+            <li>✓ Model information (JSON) - Detection methodology</li>
+            <li>✓ Retention policy (JSON) - Data governance settings</li>
+            <li>✓ Compliance metadata (JSON) - Audit trail & timestamps</li>
+          </ul>
+          
+          <form id="complianceExportForm" style="margin-top: 20px;">
+            <label style="color: white; font-weight: bold;">Tenant ID: 
+              <input id="complianceTenantId" required style="padding: 8px; border-radius: 4px; border: none; color: #333;" />
+            </label>
+            <button type="submit" style="background-color: #fff; color: #667eea; font-weight: bold; margin-top: 10px;">
+              📥 Download Compliance Pack
+            </button>
+          </form>
+          <div id="complianceExportResult" style="margin-top: 15px;"></div>
+        </div>
+      </section>
+
       <section id="admin">
-        <h2>Admin — Retention & Deletion Audits (Demo)</h2>
+        <h2>Admin — Retention & Deletion Audits</h2>
 
         <div class="card">
           <h3>Set per-tenant retention</h3>
