@@ -41,6 +41,68 @@ async function initializeAuth() {
     updateUIForUser(currentUser);
 }
 
+function clearAllDisplayedData() {
+    // Clear all tables, results, and forms when user switches
+    // Clear audit logs table
+    const logsTableBody = document.querySelector("#logsTable tbody");
+    if (logsTableBody) logsTableBody.innerHTML = "";
+    const logsCount = document.getElementById("logsCount");
+    if (logsCount) logsCount.textContent = "";
+
+    // Clear PII logs table
+    const piiLogsTableBody = document.querySelector("#piiLogsTable tbody");
+    if (piiLogsTableBody) piiLogsTableBody.innerHTML = "";
+    const piiLogsCount = document.getElementById("piiLogsCount");
+    if (piiLogsCount) piiLogsCount.textContent = "";
+
+    // Clear PII summary
+    const piiSummaryResult = document.getElementById("piiSummaryResult");
+    if (piiSummaryResult) piiSummaryResult.innerHTML = "";
+
+    // Clear PII details
+    const piiDetailsCard = document.getElementById("piiDetailsCard");
+    if (piiDetailsCard) {
+        piiDetailsCard.style.display = 'none';
+        const piiDetailsContent = document.getElementById('piiDetailsContent');
+        if (piiDetailsContent) piiDetailsContent.innerHTML = "";
+    }
+
+    // Clear deletion audits table
+    const auditsTableBody = document.querySelector("#auditsTable tbody");
+    if (auditsTableBody) auditsTableBody.innerHTML = "";
+    const auditsCount = document.getElementById("auditsCount");
+    if (auditsCount) auditsCount.textContent = "";
+
+    // Clear users table
+    const usersTableBody = document.querySelector("#usersTable tbody");
+    if (usersTableBody) usersTableBody.innerHTML = "";
+    const usersCount = document.getElementById("usersCount");
+    if (usersCount) usersCount.textContent = "";
+
+    // Clear all form results
+    const formResults = document.querySelectorAll(".form-result");
+    formResults.forEach(el => {
+        el.innerHTML = "";
+        el.classList.remove("show", "success", "error");
+    });
+
+    // Clear all form inputs
+    const forms = document.querySelectorAll("form");
+    forms.forEach(form => form.reset());
+
+    // Reset to dashboard tab on user switch
+    const navItems = document.querySelectorAll(".nav-item");
+    const contentSections = document.querySelectorAll(".content-section");
+    navItems.forEach(nav => nav.classList.remove("active"));
+    contentSections.forEach(section => section.classList.remove("active"));
+
+    // Set dashboard as active
+    const dashboardNav = document.querySelector("[data-section='dashboard']");
+    const dashboardSection = document.getElementById("dashboard");
+    if (dashboardNav) dashboardNav.classList.add("active");
+    if (dashboardSection) dashboardSection.classList.add("active");
+}
+
 function updateUIForUser(user) {
     const landingPage = document.getElementById("landingPage");
     const dashboardPage = document.getElementById("dashboardPage");
@@ -54,6 +116,7 @@ function updateUIForUser(user) {
 
     if (!user) {
         // Show landing page, hide dashboard
+        clearAllDisplayedData();
         if (landingPage) landingPage.style.display = 'flex';
         if (dashboardPage) dashboardPage.style.display = 'none';
 
@@ -71,6 +134,7 @@ function updateUIForUser(user) {
     }
 
     // Show dashboard, hide landing page
+    clearAllDisplayedData();
     if (landingPage) landingPage.style.display = 'none';
     if (dashboardPage) dashboardPage.style.display = 'flex';
 
@@ -391,6 +455,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         <td>${l.agent_id}</td>
         <td>${l.session_id}</td>
         <td>${l.channel}</td>
+        <td>${l.model_provider || '-'}</td>
+        <td>${l.model_name || '-'}</td>
         <td><pre>${escapeHtml(l.prompt)}</pre></td>
         <td><pre>${escapeHtml(l.response)}</pre></td>
       `;

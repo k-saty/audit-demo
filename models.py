@@ -27,6 +27,18 @@ class ConversationAuditLog(Base):
     prompt = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
     model_info = Column(Text, nullable=False, default="default")
+    # Model metadata for auditor traceability
+    model_provider = Column(
+        Text, nullable=True
+    )  # e.g., 'openai', 'anthropic', 'cohere'
+    model_name = Column(Text, nullable=True)  # e.g., 'gpt-4', 'claude-3-sonnet'
+    model_version = Column(Text, nullable=True)  # e.g., '1.0', 'v20240115'
+    deployment_id = Column(Text, nullable=True)  # e.g., Azure deployment ID
+    temperature = Column(Text, nullable=True)  # e.g., '0.7' (string for precision)
+    safety_mode = Column(Text, nullable=True)  # e.g., 'strict', 'relaxed', 'balanced'
+    model_config = Column(
+        JSON, nullable=True
+    )  # Extra config: top_p, frequency_penalty, etc.
 
 
 # Enforce append-only & immutable: prevent any UPDATE or DELETE operations on ConversationAuditLog instances.

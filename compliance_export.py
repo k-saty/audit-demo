@@ -55,6 +55,14 @@ def generate_compliance_export(db: Session, tenant_id: str) -> io.BytesIO:
                     "Channel",
                     "Prompt",
                     "Response",
+                    "Model Info",
+                    "Model Provider",
+                    "Model Name",
+                    "Model Version",
+                    "Deployment ID",
+                    "Temperature",
+                    "Safety Mode",
+                    "Model Config",
                 ]
             )
 
@@ -68,6 +76,14 @@ def generate_compliance_export(db: Session, tenant_id: str) -> io.BytesIO:
                         log.channel,
                         log.prompt,
                         log.response,
+                        log.model_info,
+                        log.model_provider or "",
+                        log.model_name or "",
+                        log.model_version or "",
+                        log.deployment_id or "",
+                        log.temperature or "",
+                        log.safety_mode or "",
+                        str(log.model_config) if log.model_config else "",
                     ]
                 )
 
@@ -145,6 +161,14 @@ def generate_compliance_export(db: Session, tenant_id: str) -> io.BytesIO:
                         "channel",
                         "prompt",
                         "response",
+                        "model_info",
+                        "model_provider",
+                        "model_name",
+                        "model_version",
+                        "deployment_id",
+                        "temperature",
+                        "safety_mode",
+                        "model_config",
                     ],
                 },
                 {

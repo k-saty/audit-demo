@@ -199,6 +199,42 @@
                             <label class="form-label">Response</label>
                             <textarea name="response" class="form-textarea" required placeholder="Enter the response text..."></textarea>
                         </div>
+                        
+                        <!-- Model Metadata Section -->
+                        <div style="border-top: 2px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+                            <h4 style="margin: 0 0 12px 0; color: var(--navy); font-size: 14px; font-weight: 600;">Model Metadata (Optional)</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Model Provider</label>
+                                    <input type="text" name="model_provider" class="form-input" placeholder="e.g., openai, anthropic">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Model Name</label>
+                                    <input type="text" name="model_name" class="form-input" placeholder="e.g., gpt-4, claude-3-sonnet">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Model Version</label>
+                                    <input type="text" name="model_version" class="form-input" placeholder="e.g., 1.0, v20240115">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Deployment ID</label>
+                                    <input type="text" name="deployment_id" class="form-input" placeholder="e.g., Azure deployment ID">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Temperature</label>
+                                    <input type="text" name="temperature" class="form-input" placeholder="e.g., 0.7">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Safety Mode</label>
+                                    <input type="text" name="safety_mode" class="form-input" placeholder="e.g., strict, relaxed, balanced">
+                                </div>
+                            </div>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary">Create Log</button>
                     </form>
                     <div id="createResult" class="form-result"></div>
@@ -224,6 +260,8 @@
                                     <th>Agent</th>
                                     <th>Session</th>
                                     <th>Channel</th>
+                                    <th>Model Provider</th>
+                                    <th>Model Name</th>
                                     <th>Prompt</th>
                                     <th>Response</th>
                                 </tr>
