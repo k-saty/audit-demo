@@ -109,7 +109,8 @@ def generate_compliance_export(db: Session, tenant_id: str) -> io.BytesIO:
                     "High Risk Count",
                     "PII Types",
                     "Risk Levels",
-                    "Details",
+                    "Detected Items (JSON)",
+                    "Fields Scanned",
                 ]
             )
 
@@ -133,11 +134,10 @@ def generate_compliance_export(db: Session, tenant_id: str) -> io.BytesIO:
                         high_risk_count,
                         "|".join(sorted(pii_types)),
                         "|".join(sorted(risk_levels)),
-                        (
-                            json.dumps(pii_log.pii_detected)[:100] + "..."
-                            if len(json.dumps(pii_log.pii_detected)) > 100
-                            else json.dumps(pii_log.pii_detected)
-                        ),
+                        json.dumps(pii_log.pii_detected),  # Full details, no truncation
+                        json.dumps(
+                            pii_log.fields_scanned
+                        ),  # Show which fields were scanned
                     ]
                 )
 

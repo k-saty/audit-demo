@@ -690,13 +690,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (data.details.length > 0) {
-            html += `<h5>All Detected Items:</h5>`;
+            html += `<h5>All Detected Items (with confidence threshold applied):</h5>`;
+            html += `<p style="font-size: 12px; color: #666; margin-bottom: 12px;"><em>Note: Shown below are all NER detections with ≥70% confidence score. All entities from the raw NER response are visible in the "Hugging Face NER API Response" section above.</em></p>`;
             for (const item of data.details) {
                 const riskClass = item.risk_level || 'low';
+                const scoreDisplay = item.score ? ` (${(item.score * 100).toFixed(1)}%)` : '';
                 html += `
                     <div class="pii-item ${riskClass}">
                         <span class="pii-badge ${riskClass}">${item.risk_level.toUpperCase()}</span>
-                        <strong>${item.type}</strong> in ${item.field}<br>
+                        <strong>${item.type}</strong> in ${item.field}${scoreDisplay}<br>
                         <code>${escapeHtml(item.value)}</code>
                     </div>
                 `;

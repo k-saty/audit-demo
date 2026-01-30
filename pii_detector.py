@@ -1,4 +1,3 @@
-
 """
 PII Detection module using HuggingFace Router Inference API.
 Model: dslim/bert-base-NER
@@ -41,9 +40,31 @@ if not HF_API_TOKEN:
 # ==============================
 
 PII_RISK_LEVELS = {
-    "high": ["email", "phone", "ssn", "credit_card", "PERSON"],
-    "medium": ["ipv4", "DATE", "ORG"],
-    "low": ["LOCATION", "MISC"],
+    "high": [
+        "email",
+        "phone",
+        "ssn",
+        "credit_card",
+        "PERSON",
+        "PER",
+        "B-PER",
+        "I-PER",
+    ],
+    "medium": [
+        "ipv4",
+        "DATE",
+        "ORG",
+        "B-ORG",
+        "I-ORG",
+        "B-LOC",
+        "I-LOC",
+        "LOCATION",
+        "LOC",
+        "GPE",
+        "B-GPE",
+        "I-GPE",
+    ],
+    "low": ["MISC", "B-MISC", "I-MISC", "OTHER"],
 }
 
 
@@ -93,18 +114,25 @@ def query_hf_ner(text: str) -> tuple:
 
         findings = []
 
+        # IMPORTANT: Include ALL entity types from NER model, not just whitelist
+        # This ensures consistency between raw NER response and detected items
+        # Risk classification still applies to all entity types
         for entity in entities:
             entity_type = entity.get("entity_group", "").upper()
+            entity_score = entity.get("score", 0.0)
 
-            if entity_type in ["PERSON", "ORG", "LOC", "MISC", "DATE"]:
-                findings.append(
-                    {
-                        "type": entity_type,
-                        "value": entity.get("word", ""),
-                        "score": entity.get("score", 0.0),
-                        "risk_level": get_risk_level(entity_type),
-                    }
-                )
+            # Skip very low confidence predictions (< 0.7) to avoid false positives
+            if entity_score < 0.7:
+                continue
+
+            findings.append(
+                {
+                    "type": entity_type,
+                    "value": entity.get("word", ""),
+                    "score": entity_score,
+                    "risk_level": get_risk_level(entity_type),
+                }
+            )
 
         return findings, entities
 
@@ -167,12 +195,20 @@ def inspect_text_for_pii(text: str) -> tuple:
     ner_findings, ner_response = query_hf_ner(text)
     findings.extend(ner_findings)
 
+    print(f"\n>>> inspect_text_for_pii DEBUG:")
+    print(f"    Regex findings: {[f for f in findings if f.get('type') not in ['PERSON', 'PER', 'LOC', 'ORG', 'DATE', 'MISC', 'GPE']]}")
+    print(f"    NER findings: {ner_findings}")
+    print(f"    Total before dedup: {len(findings)}")
+
     # Deduplicate findings
     unique = {}
     for item in findings:
         key = (item["type"], item["value"].lower())
         if key not in unique:
             unique[key] = item
+
+    print(f"    Total after dedup: {len(unique)}")
+    print(f"    Unique items: {list(unique.keys())}")
 
     # Sort by risk level
     sorted_findings = sorted(
@@ -181,6 +217,8 @@ def inspect_text_for_pii(text: str) -> tuple:
             x.get("risk_level", "low"), 3
         ),
     )
+
+    print(f"    Final sorted findings: {sorted_findings}\n")
 
     return sorted_findings, ner_response
 
@@ -208,6 +246,13 @@ def scan_audit_log_for_pii(prompt: str, response: str) -> Dict[str, Any]:
         all_pii.append(item)
 
     high_risk = [p for p in all_pii if p["risk_level"] == "high"]
+
+    # DEBUG: Log what we found
+    print(f"\n=== PII SCAN RESULTS ===")
+    print(f"Total PII found: {len(all_pii)}")
+    print(f"All PII items: {all_pii}")
+    print(f"High risk items: {len(high_risk)}")
+    print("=======================\n")
 
     return {
         "total_pii_found": len(all_pii),
