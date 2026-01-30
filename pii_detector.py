@@ -196,7 +196,9 @@ def inspect_text_for_pii(text: str) -> tuple:
     findings.extend(ner_findings)
 
     print(f"\n>>> inspect_text_for_pii DEBUG:")
-    print(f"    Regex findings: {[f for f in findings if f.get('type') not in ['PERSON', 'PER', 'LOC', 'ORG', 'DATE', 'MISC', 'GPE']]}")
+    print(
+        f"    Regex findings: {[f for f in findings if f.get('type') not in ['PERSON', 'PER', 'LOC', 'ORG', 'DATE', 'MISC', 'GPE']]}"
+    )
     print(f"    NER findings: {ner_findings}")
     print(f"    Total before dedup: {len(findings)}")
 
