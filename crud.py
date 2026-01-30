@@ -1,14 +1,63 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, func
 
 from models import (
     ConversationAuditLog,
     TenantRetention,
     DeletionAuditLog,
     PIIDetectionLog,
+    User,
+    Role,
 )
 from pii_detector import scan_audit_log_for_pii
+
+
+# ============ USER MANAGEMENT ============
+
+
+def create_user(db: Session, username: str, role: str = "viewer") -> User:
+    """Create a new user with a specified role (default: viewer)."""
+    # Only allow Admin or Viewer roles
+    if role not in ("admin", "viewer"):
+        raise ValueError("role must be 'admin' or 'viewer'")
+
+    user = User(username=username, role=role)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def get_user_by_username(db: Session, username: str) -> User:
+    """Retrieve user by username."""
+    return db.query(User).filter(User.username == username).first()
+
+
+def get_all_users(db: Session):
+    """Get all users."""
+    return db.query(User).all()
+
+
+def delete_user(db: Session, user_id: str) -> bool:
+    """Delete user by ID. Returns True if user was deleted, False if not found."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    db.delete(user)
+    db.commit()
+    return True
+
+
+def promote_user_to_admin(db: Session, username: str) -> User:
+    """Promote a user to admin role."""
+    user = get_user_by_username(db, username)
+    if not user:
+        raise ValueError("User not found")
+    user.role = "admin"
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def create_log(db: Session, data):
@@ -65,7 +114,16 @@ def set_retention_for_tenant(db: Session, tenant_id: str, days: int):
 
 
 def run_retention_cleanup(db: Session):
-    """Delete logs older than retention per tenant. Returns list of deletion audit records created."""
+    """
+    Audit retention policy for each tenant and log findings.
+
+    NOTE: ConversationAuditLog is now immutable (append-only, no deletes allowed).
+    This function records what WOULD be deleted per retention policy, but does not
+    perform actual deletions. Purging must be handled at database level (e.g., via
+    external scripts or manual DB operations).
+
+    Returns list of deletion audit records created (metadata only, no actual deletions).
+    """
     # Find distinct tenants in ConversationAuditLog
     tenants = [
         r[0]
@@ -76,26 +134,30 @@ def run_retention_cleanup(db: Session):
     for tenant in tenants:
         retention = get_retention_for_tenant(db, tenant)
         cutoff = now - timedelta(days=retention)
-        # delete rows older than cutoff for this tenant
-        res = db.execute(
-            delete(ConversationAuditLog).where(
+
+        # Count how many rows WOULD be deleted (for audit purposes only)
+        count_res = db.execute(
+            select(func.count(ConversationAuditLog.id)).where(
                 ConversationAuditLog.tenant_id == tenant,
                 ConversationAuditLog.timestamp < cutoff,
             )
-        )
-        deleted_count = res.rowcount if hasattr(res, "rowcount") else 0
-        db.commit()
+        ).scalar()
+        would_delete_count = count_res or 0
 
-        # record deletion audit (immutable)
+        # NOTE: We do NOT actually delete because ConversationAuditLog is immutable.
+        # Record the audit entry for compliance purposes.
         audit = DeletionAuditLog(
             tenant_id=tenant,
             retention_days=retention,
             deleted_before=cutoff,
-            deleted_count=deleted_count,
+            deleted_count=would_delete_count,  # Records what would have been deleted
             run_timestamp=now,
         )
         db.add(audit)
         db.commit()
         audits.append(audit)
+        print(
+            f"[Retention Audit] Tenant {tenant}: {would_delete_count} records older than {cutoff} (not deleted - logs are immutable)"
+        )
 
     return audits

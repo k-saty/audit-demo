@@ -35,3 +35,26 @@ class DeletionAuditRecord(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# ============ AUTH & RBAC SCHEMAS ============
+
+
+class UserCreate(BaseModel):
+    username: str
+    role: str = "viewer"  # Default role
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    username: str
+    role: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class CurrentUser(BaseModel):
+    username: str
+    role: str

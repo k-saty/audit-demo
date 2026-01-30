@@ -7,7 +7,22 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="dashboard-container">
+    <!-- Landing Page (shown when not logged in) -->
+    <div id="landingPage" class="landing-page">
+        <div class="landing-container">
+            <div class="landing-content">
+                <div class="landing-header">
+                    <span class="landing-logo-icon">⬜</span>
+                    <h1>Compliance & Audit</h1>
+                </div>
+                <p class="landing-subtitle">Real-time monitoring and reporting</p>
+                <button class="landing-signin-btn" id="landingSignInBtn">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard (shown when logged in) -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
         <!-- Left Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -34,13 +49,17 @@
                     <span class="nav-icon">⚠️</span>
                     <span>Risk Reports</span>
                 </a>
-                <a href="#" class="nav-item" data-section="compliance-export">
+                <a href="#" class="nav-item admin-tab" data-section="compliance-export" style="display: none;">
                     <span class="nav-icon">📦</span>
                     <span>Export</span>
                 </a>
-                <a href="#" class="nav-item" data-section="settings">
+                <a href="#" class="nav-item admin-tab" data-section="settings" style="display: none;">
                     <span class="nav-icon">⚙️</span>
                     <span>Settings</span>
+                </a>
+                <a href="#" class="nav-item" id="adminNavItem" data-section="admin-panel" style="display: none;">
+                    <span class="nav-icon">👑</span>
+                    <span>Admin Panel</span>
                 </a>
             </nav>
         </aside>
@@ -59,7 +78,14 @@
                     </button>
                     <div class="user-profile">
                         <span class="user-avatar">👤</span>
-                        <span class="user-name">Compliance Officer</span>
+                        <div class="user-info">
+                            <span class="user-name" id="currentUserName">Not signed in</span>
+                            <span class="user-role" id="currentUserRole"></span>
+                        </div>
+                        <div class="auth-actions">
+                            <button class="header-btn" id="loginBtn">Sign In</button>
+                            <button class="header-btn" id="logoutBtn" style="display:none;">Sign Out</button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -377,7 +403,7 @@
                 </div>
 
                 <!-- Retention Settings -->
-                <div class="card">
+                <div class="card admin-only">
                     <h3 class="card-title">Retention Policy</h3>
                     <form id="retentionForm" class="form-grid">
                         <div class="form-row">
@@ -401,7 +427,7 @@
                 </div>
 
                 <!-- Deletion Audits -->
-                <div class="card">
+                <div class="card admin-only">
                     <h3 class="card-title">Deletion Audit Trail</h3>
                     <div class="filter-bar">
                         <div class="form-group">
@@ -429,7 +455,83 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Admin Panel Section -->
+            <section id="admin-panel" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Admin Panel</h2>
+                    <p class="section-subtitle">User management and role assignment</p>
+                </div>
+
+                <!-- Create User -->
+                <div class="card">
+                    <h3 class="card-title">Create New User</h3>
+                    <form id="createUserForm" class="form-grid">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" id="newUsername" class="form-input" required placeholder="e.g., john.doe">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <select id="newUserRole" class="form-input">
+                                    <option value="viewer" selected>Viewer</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create User</button>
+                    </form>
+                    <div id="createUserResult" class="form-result"></div>
+                </div>
+
+                <!-- List Users -->
+                <div class="card">
+                    <h3 class="card-title">Manage Users</h3>
+                    <button id="fetchUsersBtn" class="btn btn-secondary" style="margin-bottom: 16px;">Load Users</button>
+                    <div id="usersCount" class="result-count"></div>
+                    <div class="table-responsive">
+                        <table id="usersTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Created</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
+    </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h3>Sign In</h3>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="loginUsername" class="form-input" required placeholder="e.g., demo_user">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select id="loginRole" class="form-input">
+                        <option value="viewer" selected>Viewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                    <button type="button" id="cancelLogin" class="btn btn-ghost">Cancel</button>
+                </div>
+            </form>
+            <div id="loginResult" class="form-result"></div>
+        </div>
     </div>
 
     <script src="/static/main.js"></script>

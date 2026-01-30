@@ -1,7 +1,107 @@
 console.log("main.js loaded!");
 
-document.addEventListener("DOMContentLoaded", () => {
+// ============ GLOBAL STATE ============
+let currentUser = null;
+let authToken = null;
+
+// ============ AUTH HELPERS ============
+function getAuthHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    if (currentUser) {
+        headers["X-User"] = currentUser.username;
+    }
+    return headers;
+}
+
+async function apiCall(endpoint, method = "GET", body = null) {
+    const opts = {
+        method: method,
+        headers: getAuthHeaders(),
+    };
+    if (body) {
+        opts.body = JSON.stringify(body);
+    }
+    return fetch(endpoint, opts);
+}
+
+async function initializeAuth() {
+    try {
+        // Query server for current session user
+        const resp = await fetch('/auth/me', { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (resp.ok) {
+            currentUser = await resp.json();
+        } else {
+            currentUser = null;
+        }
+    } catch (err) {
+        console.error('Auth init error:', err);
+        currentUser = null;
+    }
+
+    updateUIForUser(currentUser);
+}
+
+function updateUIForUser(user) {
+    const landingPage = document.getElementById("landingPage");
+    const dashboardPage = document.getElementById("dashboardPage");
+    const nameEl = document.getElementById("currentUserName");
+    const roleEl = document.getElementById("currentUserRole");
+    const adminNavItem = document.getElementById("adminNavItem");
+    const adminPanel = document.getElementById("admin-panel");
+    const adminTabs = document.querySelectorAll('.admin-tab');
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    if (!user) {
+        // Show landing page, hide dashboard
+        if (landingPage) landingPage.style.display = 'flex';
+        if (dashboardPage) dashboardPage.style.display = 'none';
+
+        nameEl.textContent = 'Not signed in';
+        roleEl.textContent = '';
+        roleEl.className = 'user-role';
+        if (adminNavItem) adminNavItem.style.display = 'none';
+        if (adminPanel) adminPanel.style.display = 'none';
+        adminTabs.forEach(tab => tab.style.display = 'none');
+        const adminOnlyEls = document.querySelectorAll('.admin-only');
+        adminOnlyEls.forEach(el => el.style.display = 'none');
+        if (loginBtn) loginBtn.style.display = '';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        return;
+    }
+
+    // Show dashboard, hide landing page
+    if (landingPage) landingPage.style.display = 'none';
+    if (dashboardPage) dashboardPage.style.display = 'flex';
+
+    nameEl.textContent = user.username;
+    roleEl.textContent = `(${user.role})`;
+    roleEl.className = `user-role role-${user.role}`;
+
+    if (user.role === 'admin') {
+        if (adminNavItem) adminNavItem.style.display = 'block';
+        // Don't force display on adminPanel - let CSS class handle visibility
+        adminTabs.forEach(tab => tab.style.display = 'flex');
+        const adminOnlyEls = document.querySelectorAll('.admin-only');
+        adminOnlyEls.forEach(el => el.style.display = '');
+    } else {
+        if (adminNavItem) adminNavItem.style.display = 'none';
+        // Remove admin panel from view by ensuring it's not active
+        if (adminPanel) adminPanel.classList.remove('active');
+        adminTabs.forEach(tab => tab.style.display = 'none');
+        const adminOnlyEls = document.querySelectorAll('.admin-only');
+        adminOnlyEls.forEach(el => el.style.display = 'none');
+    }
+
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = '';
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOMContentLoaded fired");
+
+    // Try to load current user
+    await initializeAuth();
 
     // ============ NAVIGATION ============
     const navItems = document.querySelectorAll(".nav-item");
@@ -30,6 +130,189 @@ document.addEventListener("DOMContentLoaded", () => {
     if (refreshBtn) {
         refreshBtn.addEventListener("click", () => {
             location.reload();
+        });
+    }
+
+    // ============ ADMIN PANEL & USER CREATION ============
+    const createUserForm = document.getElementById("createUserForm");
+    const createUserResult = document.getElementById("createUserResult");
+    const fetchUsersBtn = document.getElementById("fetchUsersBtn");
+    const usersTableBody = document.querySelector("#usersTable tbody");
+    const usersCount = document.getElementById("usersCount");
+
+    if (createUserForm) {
+        createUserForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("newUsername").value;
+            const role = document.getElementById("newUserRole").value;
+
+            try {
+                const resp = await apiCall("/users/create", "POST", {
+                    username: username,
+                    role: role,
+                });
+                if (resp.ok) {
+                    createUserResult.classList.add("show", "success");
+                    createUserResult.innerHTML = `✓ User '${username}' created as ${role}`;
+                    createUserForm.reset();
+                    setTimeout(() => fetchUsersBtn.click(), 1000);
+                } else {
+                    const err = await resp.json();
+                    createUserResult.classList.add("show", "error");
+                    createUserResult.innerHTML = `✗ Error: ${err.detail || resp.status}`;
+                }
+            } catch (err) {
+                createUserResult.classList.add("show", "error");
+                createUserResult.innerHTML = `✗ Error: ${err.message}`;
+            }
+        });
+    }
+
+    if (fetchUsersBtn) {
+        fetchUsersBtn.addEventListener("click", async () => {
+            try {
+                const resp = await apiCall("/users", "GET");
+                if (!resp.ok) {
+                    alert(`Fetch failed: ${resp.status}`);
+                    return;
+                }
+                const users = await resp.json();
+                usersCount.textContent = `Total Users: ${users.length}`;
+                usersTableBody.innerHTML = "";
+                for (const user of users) {
+                    const tr = document.createElement("tr");
+                    const promoteBtn = user.role === "viewer"
+                        ? `<button class="btn btn-small" onclick="promoteUser('${user.username}')">Promote to Admin</button>`
+                        : `<span style="color: #0066cc; font-weight: bold;">Admin</span>`;
+                    tr.innerHTML = `
+                        <td>${user.username}</td>
+                        <td><span class="role-badge ${user.role}">${user.role}</span></td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${promoteBtn}</td>
+                    `;
+                    usersTableBody.appendChild(tr);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+    }
+
+    window.promoteUser = async (username) => {
+        if (!confirm(`Promote ${username} to admin?`)) return;
+        try {
+            const resp = await apiCall(`/users/${username}/promote`, "POST", {});
+            if (resp.ok) {
+                alert("User promoted to admin");
+                fetchUsersBtn.click();
+            } else {
+                const err = await resp.json();
+                alert(`Error: ${err.detail || resp.status}`);
+            }
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        }
+    };
+
+    // ============ AUTH UI HANDLERS ============
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginModal = document.getElementById('loginModal');
+    const loginForm = document.getElementById('loginForm');
+    const cancelLogin = document.getElementById('cancelLogin');
+    const loginResult = document.getElementById('loginResult');
+    const landingSignInBtn = document.getElementById('landingSignInBtn');
+
+    console.log('[DEBUG] Auth elements:', {
+        loginBtn: !!loginBtn,
+        logoutBtn: !!logoutBtn,
+        loginModal: !!loginModal,
+        loginForm: !!loginForm,
+        cancelLogin: !!cancelLogin,
+        loginResult: !!loginResult,
+        landingSignInBtn: !!landingSignInBtn
+    });
+
+    // Landing page sign in button
+    if (landingSignInBtn) {
+        landingSignInBtn.addEventListener('click', () => {
+            console.log('[DEBUG] Landing Sign In button clicked');
+            if (loginModal) {
+                loginModal.style.display = 'flex';
+                loginModal.classList.add('show');
+                console.log('[DEBUG] Modal should now be visible');
+            }
+        });
+    }
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            console.log('[DEBUG] Header Sign In button clicked');
+            if (loginModal) {
+                loginModal.style.display = 'flex';
+                loginModal.classList.add('show');
+                console.log('[DEBUG] Modal should now be visible');
+            }
+        });
+    }
+
+    if (cancelLogin) {
+        cancelLogin.addEventListener('click', () => {
+            if (loginModal) {
+                loginModal.style.display = 'none';
+                loginModal.classList.remove('show');
+            }
+            if (loginResult) loginResult.innerHTML = '';
+        });
+    }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            console.log('[DEBUG] Login form submitted');
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const role = document.getElementById('loginRole').value;
+            console.log('[DEBUG] Login attempt:', { username, role });
+            if (!username) return alert('Enter username');
+
+            try {
+                const resp = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, role: role })
+                });
+                console.log('[DEBUG] Login response status:', resp.status);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    console.error('[DEBUG] Login error:', err);
+                    if (loginResult) loginResult.innerHTML = `✗ ${err.detail || resp.statusText}`;
+                    return;
+                }
+                const user = await resp.json();
+                console.log('[DEBUG] Login successful:', user);
+                currentUser = user;
+                updateUIForUser(currentUser);
+                if (loginModal) {
+                    loginModal.style.display = 'none';
+                    loginModal.classList.remove('show');
+                }
+                if (loginResult) loginResult.innerHTML = '';
+            } catch (err) {
+                console.error('[DEBUG] Login error', err);
+                if (loginResult) loginResult.innerHTML = `✗ ${err.message}`;
+            }
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const resp = await fetch('/auth/logout', { method: 'POST' });
+                currentUser = null;
+                updateUIForUser(null);
+            } catch (err) {
+                console.error('Logout error', err);
+            }
         });
     }
 
@@ -75,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = Object.fromEntries(new FormData(form).entries());
             const resp = await fetch("/audit/log", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", ...getAuthHeaders() },
                 body: JSON.stringify(data),
             });
             if (resp.ok) {
@@ -93,7 +376,9 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchBtn.addEventListener("click", async () => {
         const tenant = queryTenant.value.trim();
         if (!tenant) return alert("Enter tenant id");
-        const resp = await fetch(`/audit/logs?tenant_id=${encodeURIComponent(tenant)}`);
+        const resp = await fetch(`/audit/logs?tenant_id=${encodeURIComponent(tenant)}`, {
+            headers: getAuthHeaders(),
+        });
         if (!resp.ok) return alert(`Fetch failed: ${resp.status}`);
         const data = await resp.json();
         logsCount.textContent = `Count: ${data.count}`;
@@ -118,11 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(retentionForm).entries());
             data.retention_days = Number(data.retention_days);
-            const resp = await fetch('/admin/retention', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
+            const resp = await apiCall('/admin/retention', 'POST', data);
             if (resp.ok) {
                 const j = await resp.json();
                 retentionResult.classList.add("show", "success");
@@ -130,7 +411,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 retentionForm.reset();
             } else {
                 retentionResult.classList.add("show", "error");
-                retentionResult.innerHTML = `✗ Error: ${resp.status}`;
+                const err = await resp.json().catch(() => ({}));
+                retentionResult.innerHTML = `✗ Error: ${err.detail || resp.status}`;
             }
         });
     }
@@ -140,8 +422,12 @@ document.addEventListener("DOMContentLoaded", () => {
         fetchAuditsBtn.addEventListener('click', async () => {
             const tenant = (auditTenant && auditTenant.value.trim()) || '';
             const url = tenant ? `/admin/deletion-audits?tenant_id=${encodeURIComponent(tenant)}` : '/admin/deletion-audits';
-            const resp = await fetch(url);
-            if (!resp.ok) return alert(`Fetch audits failed: ${resp.status}`);
+            const resp = await apiCall(url, 'GET');
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                alert(`Fetch audits failed: ${err.detail || resp.status}`);
+                return;
+            }
             const data = await resp.json();
             auditsCount.textContent = `Count: ${data.count}`;
             auditsTableBody.innerHTML = '';
@@ -166,8 +452,12 @@ document.addEventListener("DOMContentLoaded", () => {
             runCleanupBtn.disabled = true;
             runCleanupBtn.textContent = 'Running...';
             try {
-                const resp = await fetch('/admin/run-cleanup', { method: 'POST' });
-                if (!resp.ok) return alert(`Cleanup failed: ${resp.status}`);
+                const resp = await apiCall('/admin/run-cleanup', 'POST', {});
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    alert(`Cleanup failed: ${err.detail || resp.status}`);
+                    return;
+                }
                 const data = await resp.json();
                 alert(`Cleanup completed, audits created: ${data.count}`);
             } finally {
@@ -185,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tenant = piiTenant.value.trim();
             if (!tenant) return alert("Enter tenant ID");
 
-            const resp = await fetch(`/pii/summary?tenant_id=${encodeURIComponent(tenant)}`);
+            const resp = await apiCall(`/pii/summary?tenant_id=${encodeURIComponent(tenant)}`, 'GET');
             if (!resp.ok) return alert(`Failed to fetch PII summary: ${resp.status}`);
 
             const data = await resp.json();
@@ -236,7 +526,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (riskLevel) params.append('risk_level', riskLevel);
             if (params.toString()) url += '?' + params.toString();
 
-            const resp = await fetch(url);
+            const resp = await apiCall(url, 'GET');
             if (!resp.ok) return alert(`Failed to fetch PII logs: ${resp.status}`);
 
             const data = await resp.json();
@@ -262,7 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // View PII Details
     window.viewPiiDetails = async (detectionId) => {
-        const resp = await fetch(`/pii/details/${detectionId}`);
+        const resp = await apiCall(`/pii/details/${detectionId}`, 'GET');
         if (!resp.ok) return alert(`Failed to fetch details: ${resp.status}`);
 
         const data = await resp.json();
@@ -380,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const url = `/compliance/export?tenant_id=${encodeURIComponent(tenantId)}`;
                 console.log("Fetching:", url);
 
-                const response = await fetch(url);
+                const response = await apiCall(url, 'GET');
                 console.log("Response status:", response.status);
                 console.log("Response headers:", response.headers);
 
@@ -391,7 +681,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     try {
                         const error = JSON.parse(text);
                         complianceExportResult.classList.add("error");
-                        complianceExportResult.innerHTML = `✗ Error: ${error.error || response.statusText}`;
+                        complianceExportResult.innerHTML = `✗ Error: ${error.error || error.detail || response.statusText}`;
                     } catch {
                         complianceExportResult.classList.add("error");
                         complianceExportResult.innerHTML = `✗ Error: ${response.statusText}`;

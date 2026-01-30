@@ -1,8 +1,18 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, Text, TIMESTAMP, Integer, DateTime, JSON
+from sqlalchemy import Column, Text, TIMESTAMP, Integer, DateTime, JSON, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
+from enum import Enum
+from sqlalchemy import event
+from sqlalchemy.orm import Session
+
+
+class Role(str, Enum):
+    """User roles for RBAC."""
+
+    ADMIN = "admin"
+    VIEWER = "viewer"
 
 
 class ConversationAuditLog(Base):
@@ -17,6 +27,17 @@ class ConversationAuditLog(Base):
     prompt = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
     model_info = Column(Text, nullable=False, default="default")
+
+
+# Enforce append-only & immutable: prevent any UPDATE or DELETE operations on ConversationAuditLog instances.
+@event.listens_for(ConversationAuditLog, "before_update", propagate=True)
+def _prevent_conversation_update(mapper, connection, target):
+    raise Exception("ConversationAuditLog is immutable and cannot be updated")
+
+
+@event.listens_for(ConversationAuditLog, "before_delete", propagate=True)
+def _prevent_conversation_delete(mapper, connection, target):
+    raise Exception("ConversationAuditLog is immutable and cannot be deleted")
 
 
 class TenantRetention(Base):
@@ -73,3 +94,14 @@ class PIIDetectionLog(Base):
     ner_model_info = Column(
         Text, nullable=False, default="dslim/bert-base-NER"
     )  # NER model used
+
+
+class User(Base):
+    """User model with role-based access control."""
+
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(Text, unique=True, nullable=False)
+    role = Column(SQLEnum(Role), nullable=False, default=Role.VIEWER)
+    created_at = Column(TIMESTAMP(timezone=True), default=datetime.utcnow)
